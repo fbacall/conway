@@ -1,2 +1,0 @@
-# conway
-Game of life
