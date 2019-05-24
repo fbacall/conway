@@ -52,15 +52,20 @@
     var width = 30;
     var height = 30;
     var grid = [];
+    var nextGen = [];
     var t = document.getElementById("canvas");
     var started = false;
 
     function init() {
-        for (var i = 0; i < height; i++) {
-            grid.push([]);
+        for (var i = 0; i < width; i++) {
+            grid.push(new Array(height));
+            nextGen.push(new Array(height));
+        }
+
+        for (var j = 0; j < height; j++) {
             var row = document.createElement("tr");
             t.appendChild(row);
-            for (var j = 0; j < width; j++) {
+            for (var i = 0; i < width; i++) {
                 var cell = document.createElement("td");
                 cell.className = 'cell dead';
                 row.appendChild(cell);
@@ -75,9 +80,10 @@
         var minYBound = (y > 0) ? (y - 1) : y;
         var maxXBound = (x < (width - 1)) ? x + 1 : x;
         var maxYBound = (y < (height - 1)) ? y + 1 : y;
+
         for (var i = minXBound; i <= maxXBound; i++) {
             for (var j = minYBound; j <= maxYBound; j++) {
-                if (grid[i][j].className === 'cell live')
+                if (!(i === x && j === y) && (grid[i][j].className === 'cell live'))
                     neighbours++;
             }
         }
@@ -94,22 +100,27 @@
         // Any live cell with more than three live neighbours dies, as if by overpopulation.
         // Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
 
-        for (var i = 0; i < height; i++) {
-            for (var j = 0; j < width; j++) {
-                var cell = grid[j][i];
+        for (var i = 0; i < width; i++) {
+            for (var j = 0; j < height; j++) {
+                var cell = grid[i][j];
                 var alive = cell.className === 'cell live';
                 var nCount = getNeighbours(i, j);
+                nextGen[i][j] = alive;
                 if (alive) {
-                    if (nCount < 2) {
-                        cell.className = 'cell dead'
-                    } else if (nCount < 4) {
-                    } else {
-                        cell.className = 'cell dead'
+                    if (nCount < 2 || nCount > 3) {
+                        nextGen[i][j] = false;
                     }
-                } else if (nCount === 3) {
-                    cell.className = 'cell live'
+                } else {
+                    if (nCount === 3) {
+                        nextGen[i][j] = true;
+                    }
                 }
-                getNeighbours(i, j);
+            }
+        }
+
+        for (var i = 0; i < width; i++) {
+            for (var j = 0; j < height; j++) {
+                grid[i][j].className = nextGen[i][j] ? 'cell live' : 'cell dead';
             }
         }
     }
@@ -124,7 +135,7 @@
             // if (targetElement.className.endsWith('live')) {
             //     targetElement.className = 'cell dead';
             // } else {
-                targetElement.className = 'cell live';
+            targetElement.className = 'cell live';
             // }
         }
     }
