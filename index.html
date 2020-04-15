@@ -8,14 +8,13 @@
       color: #333;
       background-color: #ccc;
       margin: 0;
+      text-align: center;
     }
 
     #container {
-      width: 800px;
-      margin: 0 auto;
-      border-color: #666;
-      border-style: solid;
-      border-width: 0 1px 1px;
+      display: inline-block;
+      margin: 10px auto;
+      border: 1px solid #666;
       background-color: #fff;
       padding: 10px 30px 30px;
     }
@@ -23,13 +22,13 @@
     table {
       border: 1px solid #ccc;
       border-collapse: collapse;
-      margin: auto;
+      margin: 10px;
     }
 
     .cell {
       border: 1px solid #ccc;
-      width: 20px;
-      height: 20px;
+      width: 12px;
+      height: 12px;
     }
 
     .dead {
@@ -42,124 +41,168 @@
   </style>
 </head>
 <body>
+
 <div id="container">
-  <h1>Life <button id="button">Start</button></h1>
-  <div id="canvas_container">
+  <h1>Conway's Game of Life</h1>
+
+  <div>
+    Generation: <span id="generation">0</span>
+  </div>
+
+  <div>
+    <button id="start">Start</button>
+    <button id="reset">Clear</button>
+  </div>
+
+  <div>
     <table id="canvas"></table>
   </div>
 </div>
+
 <script>
-    var width = 30;
-    var height = 30;
-    var grid = [];
-    var nextGen = [];
-    var t = document.getElementById("canvas");
-    var started = false;
+  var width = 49;
+  var height = 49;
+  var grid;
+  var nextGen;
+  var t = document.getElementById("canvas");
+  var g = document.getElementById("generation");
+  var started = false;
+  var gen = 0;
+  var infPattern = [
+    [1,1,1,0,1],
+    [1,0,0,0,0],
+    [0,0,0,1,1],
+    [0,1,1,0,1],
+    [1,0,1,0,1]
+  ];
 
-    function init() {
-        for (var i = 0; i < width; i++) {
-            grid.push(new Array(height));
-            nextGen.push(new Array(height));
-        }
-
-        for (var j = 0; j < height; j++) {
-            var row = document.createElement("tr");
-            t.appendChild(row);
-            for (var i = 0; i < width; i++) {
-                var cell = document.createElement("td");
-                cell.className = 'cell dead';
-                row.appendChild(cell);
-                grid[i][j] = cell;
-            }
-        }
+  function init() {
+    t.innerHTML = '';
+    gen = 0;
+    grid = [];
+    nextGen = [];
+    for (var i = 0; i < width; i++) {
+      grid.push(new Array(height));
+      nextGen.push(new Array(height));
     }
 
-    function getNeighbours(x, y) {
-        var neighbours = 0;
-        var minXBound = (x > 0) ? (x - 1) : x;
-        var minYBound = (y > 0) ? (y - 1) : y;
-        var maxXBound = (x < (width - 1)) ? x + 1 : x;
-        var maxYBound = (y < (height - 1)) ? y + 1 : y;
-
-        for (var i = minXBound; i <= maxXBound; i++) {
-            for (var j = minYBound; j <= maxYBound; j++) {
-                if (!(i === x && j === y) && (grid[i][j].className === 'cell live'))
-                    neighbours++;
-            }
-        }
-
-        return neighbours;
+    for (var j = 0; j < height; j++) {
+      var row = document.createElement("tr");
+      t.appendChild(row);
+      for (var i = 0; i < width; i++) {
+        var cell = document.createElement("td");
+        cell.className = 'cell dead';
+        row.appendChild(cell);
+        grid[i][j] = cell;
+      }
     }
 
-    function mainloop() {
-        if (!started)
-            return;
+    g.innerText = '0';
+  }
 
-        // Any live cell with fewer than two live neighbours dies, as if by underpopulation.
-        // Any live cell with two or three live neighbours lives on to the next generation.
-        // Any live cell with more than three live neighbours dies, as if by overpopulation.
-        // Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
+  function drawInfPattern() {
+    var startX = Math.ceil(width / 2) - Math.ceil(infPattern[0].length / 2);
+    var startY = Math.ceil(height / 2) - Math.ceil(infPattern.length / 2);
 
-        for (var i = 0; i < width; i++) {
-            for (var j = 0; j < height; j++) {
-                var cell = grid[i][j];
-                var alive = cell.className === 'cell live';
-                var nCount = getNeighbours(i, j);
-                nextGen[i][j] = alive;
-                if (alive) {
-                    if (nCount < 2 || nCount > 3) {
-                        nextGen[i][j] = false;
-                    }
-                } else {
-                    if (nCount === 3) {
-                        nextGen[i][j] = true;
-                    }
-                }
-            }
-        }
+    for (var i = 0; i < infPattern.length; i++) {
+      var row = infPattern[i];
+      for (var j = 0; j < row.length; j++) {
+        grid[startX + j][startY + i].className = infPattern[i][j] === 1 ? 'cell live' : 'cell dead';
+      }
+    }
+  }
 
-        for (var i = 0; i < width; i++) {
-            for (var j = 0; j < height; j++) {
-                grid[i][j].className = nextGen[i][j] ? 'cell live' : 'cell dead';
-            }
-        }
+  function getNeighbours(x, y) {
+    var neighbours = 0;
+    var minXBound = (x > 0) ? (x - 1) : x;
+    var minYBound = (y > 0) ? (y - 1) : y;
+    var maxXBound = (x < (width - 1)) ? x + 1 : x;
+    var maxYBound = (y < (height - 1)) ? y + 1 : y;
+
+    for (var i = minXBound; i <= maxXBound; i++) {
+      for (var j = minYBound; j <= maxYBound; j++) {
+        if (!(i === x && j === y) && (grid[i][j].className === 'cell live'))
+          neighbours++;
+      }
     }
 
-    init();
+    return neighbours;
+  }
 
-    setInterval(mainloop,  1000.0 / 15.0);
+  function mainloop() {
+    if (!started)
+      return;
 
-    function toggleCell(e) {
-        var targetElement = event.target || event.srcElement;
-        if (targetElement.className.startsWith('cell')) {
-            // if (targetElement.className.endsWith('live')) {
-            //     targetElement.className = 'cell dead';
-            // } else {
-            targetElement.className = 'cell live';
-            // }
-        }
-    }
+    // Any live cell with fewer than two live neighbours dies, as if by underpopulation.
+    // Any live cell with two or three live neighbours lives on to the next generation.
+    // Any live cell with more than three live neighbours dies, as if by overpopulation.
+    // Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
 
-    var clicking = false;
-    t.addEventListener("click", toggleCell, false);
-    t.addEventListener("mousedown", function () { clicking = true; }, false);
-    window.addEventListener("mouseup", function () { clicking = false; }, false);
-    t.addEventListener("mousemove", function (e) {
-        if (clicking) {
-            toggleCell(e);
-        }
-    } , false);
-
-    var b = document.getElementById('button');
-    b.addEventListener("click", function (e) {
-        if (started) {
-            started = false;
-            b.innerText = 'Start';
+    for (var i = 0; i < width; i++) {
+      for (var j = 0; j < height; j++) {
+        var cell = grid[i][j];
+        var alive = cell.className === 'cell live';
+        var nCount = getNeighbours(i, j);
+        nextGen[i][j] = alive;
+        if (alive) {
+          if (nCount < 2 || nCount > 3) {
+            nextGen[i][j] = false;
+          }
         } else {
-            started = true;
-            b.innerText = 'Stop';
+          if (nCount === 3) {
+            nextGen[i][j] = true;
+          }
         }
-    }, false);
+      }
+    }
+
+    for (var i = 0; i < width; i++) {
+      for (var j = 0; j < height; j++) {
+        grid[i][j].className = nextGen[i][j] ? 'cell live' : 'cell dead';
+      }
+    }
+
+    g.innerText = (++gen).toString();
+  }
+
+  init();
+  drawInfPattern();
+
+  setInterval(mainloop,  1000.0 / 15.0);
+
+  function toggleCell(e) {
+    var targetElement = event.target || event.srcElement;
+    if (targetElement.className.startsWith('cell')) {
+      // if (targetElement.className.endsWith('live')) {
+      //     targetElement.className = 'cell dead';
+      // } else {
+      targetElement.className = 'cell live';
+      // }
+    }
+  }
+
+  var clicking = false;
+  t.addEventListener("click", toggleCell, false);
+  t.addEventListener("mousedown", function () { clicking = true; }, false);
+  window.addEventListener("mouseup", function () { clicking = false; }, false);
+  t.addEventListener("mousemove", function (e) {
+    if (clicking) {
+      toggleCell(e);
+    }
+  } , false);
+
+  var b = document.getElementById('start');
+  b.addEventListener("click", function (e) {
+    if (started) {
+      started = false;
+      b.innerText = 'Start';
+    } else {
+      started = true;
+      b.innerText = 'Stop';
+    }
+  }, false);
+
+  document.getElementById('reset').addEventListener("click", init, false);
 </script>
 </body>
 </html>
